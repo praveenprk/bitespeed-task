@@ -25,6 +25,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       const data = JSON.parse(details);
       console.log(`data from index:`, data);
+      identifyHandler(data, res);
       return;
     });
     
