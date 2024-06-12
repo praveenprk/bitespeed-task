@@ -22,6 +22,7 @@ function identifyHandler(data, res) {
 
     if (rows.length === 0) {
       // No existing contacts, create a new primary contact
+      console.log(`No existing contacts, create a new primary contact`);
       const insertQuery = `INSERT INTO Contact (email, phoneNumber, linkPrecedence, createdAt, updatedAt) VALUES (?, ?, 'primary', NOW(), NOW())`;
       db.query(insertQuery, [email, phoneNumber], function (err, result) {
         if (err) {
@@ -38,22 +39,24 @@ function identifyHandler(data, res) {
           phoneNumbers: [phoneNumber].filter(Boolean), // Remove null values
           secondaryContactIds: []
         };
-
+        console.log(`new Contanct in db:`, newContact);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ contact: newContact }));
+        return;
       });
     } else {
-      // Existing contact(s) found
+      // Existing contact found
+      console.log(`Existing contact found`);
       const primaryContact = rows.find(row => row.linkPrecedence === 'primary');
       const secondaryContacts = rows.filter(row => row.linkPrecedence === 'secondary');
 
       // Use Set to ensure unique emails and phone numbers, and filter to remove null values
-      const emails = new Set([primaryContact.email, ...secondaryContacts.map(row => row.email)].filter(Boolean));
-      const phoneNumbers = new Set([primaryContact.phoneNumber, ...secondaryContacts.map(row => row.phoneNumber)].filter(Boolean));
+      const emails = new Set([primaryContact?.email, ...secondaryContacts.map(row => row.email)].filter(Boolean));
+      const phoneNumbers = new Set([primaryContact?.phoneNumber, ...secondaryContacts.map(row => row.phoneNumber)].filter(Boolean));
 
       const responseContact = {
-        primaryContactId: primaryContact.id,
+        primaryContactId: primaryContact?.id,
         emails: [...emails].filter(Boolean), // Remove null values
         phoneNumbers: [...phoneNumbers].filter(Boolean), // Remove null values
         secondaryContactIds: secondaryContacts.map(row => row.id)
@@ -62,7 +65,7 @@ function identifyHandler(data, res) {
       // If a new secondary contact needs to be created
       if (!rows.some(row => row.email === email && row.phoneNumber === phoneNumber)) {
         const insertQuery = `INSERT INTO Contact (email, phoneNumber, linkedId, linkPrecedence, createdAt, updatedAt) VALUES (?, ?, ?, 'secondary', NOW(), NOW())`;
-        db.query(insertQuery, [email, phoneNumber, primaryContact.id], function (err, result) {
+        db.query(insertQuery, [email, phoneNumber, primaryContact?.id], function (err, result) {
           if (err) {
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
@@ -80,11 +83,13 @@ function identifyHandler(data, res) {
           responseContact.emails = [...emails].filter(Boolean);
           responseContact.phoneNumbers = [...phoneNumbers].filter(Boolean);
 
+          console.log(`secondary contact:`, responseContact);
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ contact: responseContact }));
         });
       } else {
+        console.log(`else part:`, responseContact);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ contact: responseContact }));
