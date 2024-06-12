@@ -1,11 +1,11 @@
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-//   host: '127.0.0.1',      // Replace with your host
+  host: '127.0.0.1',      // Replace with your host
   user: 'root',           // Replace with your MySQL username
   password: '',   // Replace with your MySQL password
   database: 'bitespeed',
-//   port: 3306,
+  port: 3306,
   socketPath: '/tmp/mysql.sock'
 });
 
